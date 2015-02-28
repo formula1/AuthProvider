@@ -58,4 +58,5 @@ Its important to note
 * If the user is not authorized, it will just return the uri back
 * If the user is in the process of authorization, it will put the request in a queue until it has finished
 * If the user is authorized, it will return the uri with the access token
-* its best used as user.asAuthority(url, function(url){ request(url, funciton(data){ dostuff }) }) 
+* its best used as `user.asAuthority(url, function(url){ request(url, funciton(data){ dostuff }) })`
+* I may include promise support
