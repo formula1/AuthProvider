@@ -14,7 +14,7 @@ with others that use similar dependencies than as a standalone.
 
 Where
 
-* github_clientid - Is your github client ide
+* github_clientid - Is your github app client id
 * access_codeRetriever - `function(code,next){ next(error,access_token)};` How you implement it isn't up to me.
 * options - Additional options
 
