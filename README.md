@@ -44,3 +44,18 @@ This basically just deletes what ever is in the local storage, access token and 
 
 `user.isLoggedIn === true`
 
+#### Making a request as a user
+
+`user.asAuthority(url, next)`
+
+* url - is a valid url, or just has a "?" and valid parameters after.
+* next - the callback that will recieve the uri
+
+Its important to note
+
+* This doesn't make ajax calls, just parses the url and adds its access_token to it if it has one
+* It will **always** return a url. It just may have an access token. It may be delayed
+* If the user is not authorized, it will just return the uri back
+* If the user is in the process of authorization, it will put the request in a queue until it has finished
+* If the user is authorized, it will return the uri with the access token
+* its best used as user.asAuthority(url, function(url){ request(url, funciton(data){ dostuff }) }) 
