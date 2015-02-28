@@ -1,8 +1,10 @@
 
 var querystring = require("querystring");
+var EventEmitter = require("events").EventEmitter;
 global.cookieStorage = require("./CookieStore");
 
 function AuthProvider(client_id,accessRetriever,options){
+  EventEmitter.call(this);
   this.client_id = client_id;
   this.accessRetriever = accessRetriever;
   this.storage = options.storage||cookieStorage;
@@ -11,6 +13,9 @@ function AuthProvider(client_id,accessRetriever,options){
   this.uri_queue = [];
   this.parseURL();
 }
+
+AuthProvider.prototype = Object.create(EventEmitter);
+AuthProvider.prototype.constructor = AuthProvider;
 
 AuthProvider.prototype.parseURL = function(){
   if(this.storage.get(this.identity+"_access_code")){
