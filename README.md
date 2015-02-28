@@ -31,7 +31,7 @@ calls as different people. Another could be using a browser as a host. Your purp
 
 `user.login(type)`
 
-* type - can be `!falsy` which defaults to "redirect" or either "redirect" or "popup". 
+* type - can be "redirect", "popup" or will default to "redirect.
 If redirect, will redirect the page. If popup, will create a popup.
 
 #### Logging out a user
