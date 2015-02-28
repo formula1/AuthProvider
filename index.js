@@ -11,7 +11,13 @@ function AuthProvider(client_id,accessRetriever,options){
   this.identity = options.identity || "global";
   this.origin = options.origin || document.location.href;
   this.uri_queue = [];
-  this.parseURL();
+  this.is_authed = -1;
+  Object.defineProperty("isLoggedIn",this,{
+    get:function(){
+      return this.is_authed === 1;
+    }
+  });
+  setTimeout(this.parseURL.bind(this),1);
 }
 
 AuthProvider.prototype = Object.create(EventEmitter);
