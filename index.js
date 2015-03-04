@@ -115,6 +115,7 @@ AuthProvider.prototype.asAuthority = function(uri,next){
 
 AuthProvider.prototype.logout = function(){
   this.storage.removeItem(this.identity+"_access_token");
+  this.access_token = void(0);
   this.is_authed = -1;
 };
 
@@ -124,7 +125,8 @@ AuthProvider.prototype.login = function(type){
   this.storage.setItem(this.identity+"_state", state);
   var location = "https://github.com/login/oauth/authorize" +
     "?client_id="+config.cid +
-    "&state="+state;
+    "&state="+state +
+    "&redirect_uri="+document.location;
 
   if(type == "redirect"){
     window.location.href = location;
