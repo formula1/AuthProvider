@@ -28,7 +28,7 @@ function AuthProvider(identity){
   this.storage = identity.storage||cookieStorage;
   this.identity = identity.identity || "global";
   for(var i in ux){
-    ux[i].init.call(this,identity);
+    if(ux[i].init) ux[i].init.call(this,identity);
   }
   this.asAuthority = this.asAuthority.bind(this);
   setTimeout(this.parseURL.bind(this),1);
