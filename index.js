@@ -3,9 +3,20 @@ var querystring = require("querystring");
 var EventEmitter = require("events").EventEmitter;
 window.cookieStorage = require("./CookieStore");
 
-function AuthProvider(client_id,accessRetriever,options){
+var ux = {
+ popup: require("./user-experience/popup"),
+ redirect: require("./user-experience/redirect")
+};
+
+var auth = {
+ github: require("./auth-providers/github"),
+};
+
+var validauths = {};
+
+function AuthProvider(identity){
   EventEmitter.call(this);
-  this.client_id = client_id;
+  this.config = validauths;
   this.accessRetriever = accessRetriever;
   this.uri_queue = [];
   this.is_authed = 0;
@@ -14,11 +25,12 @@ function AuthProvider(client_id,accessRetriever,options){
       return this.is_authed === 1;
     }
   });
-  options = options?options:{};
-  this.storage = options.storage||cookieStorage;
-  this.identity = options.identity || "global";
-  this.origin = options.origin || window.location.host;
-
+  identity = identity?identity:{};
+  this.storage = identity.storage||cookieStorage;
+  this.identity = identity.identity || "global";
+  for(var i in ux){
+    ux[i].init.call(this,identity);
+  }
   this.asAuthority = this.asAuthority.bind(this);
   setTimeout(this.parseURL.bind(this),1);
 }
@@ -26,18 +38,30 @@ function AuthProvider(client_id,accessRetriever,options){
 AuthProvider.prototype = Object.create(EventEmitter.prototype);
 AuthProvider.prototype.constructor = AuthProvider;
 
+
+AuthProvider.init = function(authorities){
+  for(var i in authorities){
+    if(!(i in auth)) throw new Error(i+" is not currently supported");
+    if(!authorities[i].client_id) throw new Error(i+" needs a client id");
+    if(!authorities[i].access_retriever) throw new Error(i+" needs an access_token provider");
+  }
+  validauths = authorities;
+};
+
+
 AuthProvider.prototype.parseURL = function(){
-  this.access_token = this.storage.getItem(this.identity+"_access_token");
-  if(this.access_token){
-    this.is_authed = 1;
-    this.runQueue();
-    return;
+  this.info = this.storage.getItem(this.identity+"_authority");
+//  this.access_token = this.storage.getItem(this.identity+"_access_token");
+  if(!this.info){
+    return this.fail("not expecting to login");
+  }
+  if(this.info.access_token){
+    return this.finish();
   }
   var query = window.location.href;
   var temp = query.indexOf("?");
   if(temp === -1 ){
-    this.fail("no code");
-    return;
+    return this.fail("no code");
   }
   query = query.substring(temp+1);
   query = querystring.parse(query);
@@ -46,50 +70,48 @@ AuthProvider.prototype.parseURL = function(){
   if(query.state.substring(0,this.identity.length) != this.identity){
     return this.fail("not me");
   }
-  if(this.storage.getItem(this.identity+"_state") != query.state){
+  if(this.info.state != query.state){
     return this.fail("improper state");
   }
-  if(window.opener){
-    try{
-      window.opener.postMessage(query.code,this.origin);
-    }catch(e){
-      console.log("window probably doesn't exist anymore");
-    }
-    window.close();
-    return;
+  if(ux[this.info.ux].code){
+    ux[this.info.ux].code.call(this,query.code,function(){
+      this.getAccess(query.code);
+    });
   }
-  this.getAccess(query.code);
-};
-
-AuthProvider.prototype.fail = function(e){
-  this.is_authed = -1;
-  if(window.opener){
-    try{
-      window.opener.postMessage("failure-"+e,this.origin);
-    }catch(err){
-      console.log("window probably doesn't exist anymore");
-    }
-    window.close();
-  }
-  this.emit("parse-error",e);
-  this.runQueue();
 };
 
 AuthProvider.prototype.getAccess = function(code){
   this.is_authed = 0;
-  this.storage.removeItem(this.identity+"_state");
-  this.accessRetriever(code,function(e,access_token){
+  delete this.info.state;
+  this[this.info.auth].accessRetriever(code,function(e,access_token){
     if(e){
-      this.is_authed = -1;
-      return this.emit("access-error", e);
+      this.fail(e);
     }else{
-      this.access_token = access_token;
-      this.storage.setItem(this.identity+"_access_token",access_token);
-      is_authed = 1;
-      this.emit("access-success",this);
+      this.info.access_token = access_token;
+      this.storage.setItem(this.identity+"_authority",JSON.stringify(this.info));
+      this.finish();
     }
-    this.runQueue();
   }.bind(this));
+};
+
+AuthProvider.prototype.fail = function(e){
+  var fail = function(){
+    this.is_authed = -1;
+    this.storage.removeItem(this.identity+"_authority");
+    this.emit("error",e);
+    this.runQueue();
+  }.bind(this);
+  if(ux[this.info.ux].error){
+    return ux[this.info.ux].error.call(this,e,fail);
+  }else{
+    fail();
+  }
+};
+
+AuthProvider.prototype.finish = function(){
+  this.is_authed = 1;
+  this.emit("login",this);
+  this.runQueue();
 };
 
 AuthProvider.prototype.runQueue = function(){
@@ -100,51 +122,62 @@ AuthProvider.prototype.runQueue = function(){
 };
 
 AuthProvider.prototype.asAuthority = function(uri,next){
-  if(this.is_authed === -1) return next(uri);
-  if(this.is_authed === 0) return this.uri_queue.push([uri,next]);
+  if(this.is_authed === -1){
+    setTimeout(next.bind(next,uri),1);
+    return;
+  }
+  if(this.is_authed === 0){
+    this.uri_queue.push([uri,next]);
+    return;
+  }
   var query = uri.split("?");
   if(query.length === 1 ){
     query.push({});
   }else{
     query[1] = querystring.parse(query[1]);
   }
-  query[1].access_token = this.access_token;
+  query[1].access_token = this.info.access_token;
   query[1] = querystring.stringify(query[1]);
-  next(query.join("?"));
+  setTimeout(next.bind(next,query.join("?")),1);
+};
+
+AuthProvider.prototype.login = function(authtype, uxtype){
+  if(this.isLoggedIn){
+    this.logout();
+  }
+  authtype = authtype||"github";
+  uxtype = uxtype||"redirect";
+
+  if(!(authtype in auth)) throw new Error("This auth type is not available");
+  if(!(authtype in this.config)) throw new Error("You did not initialize this authtype");
+  if(!(uxtype in ux)) throw new Error("This is not an available method for user experience");
+
+  var state = this.identity+Date.now()+"_"+Math.random();
+  this.info = {
+    state: state,
+    auth: authtype,
+    ux: uxtype
+  };
+  this.storage.setItem(this.identity+"_authority", JSON.stringify(this.info));
+
+  var location = auth[authtype].authLocation(
+    this.config[authtype].clientid,
+    state,
+    document.location
+  );
+  var _this = this;
+  ux[uxtype].tryToAuth.call(this,location,function(e,code){
+    if(e) return _this.fail(e);
+    _this.getAccess(code);
+  });
 };
 
 AuthProvider.prototype.logout = function(){
-  this.storage.removeItem(this.identity+"_access_token");
-  this.access_token = void(0);
+  this.storage.removeItem(this.identity+"_authority");
+  this.info = void(0);
   this.is_authed = -1;
+  this.emit("logout");
 };
 
-AuthProvider.prototype.login = function(type){
-  type = type||"redirect";
-  var state = this.identity+Date.now()+"_"+Math.random();
-  this.storage.setItem(this.identity+"_state", state);
-  var location = "https://github.com/login/oauth/authorize" +
-    "?client_id="+config.cid +
-    "&state="+state +
-    "&redirect_uri="+document.location;
-
-  if(type == "redirect"){
-    window.location.href = location;
-    return;
-  }
-  if(type == "popup"){
-    this.is_authed = 0;
-    var popup = window.open(location);
-    popup.addEventListener("message", function(event){
-      if(event.origin != this.origin) return;
-      if(event.data.substring(0,7) == "failure"){
-        this.is_authed = -1;
-        return;
-      }
-      this.getAccess(event.data);
-    }, false);
-    return;
-  }
-};
 
 module.exports = AuthProvider;
