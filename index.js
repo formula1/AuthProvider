@@ -104,7 +104,7 @@ AuthProvider.prototype.fail = function(e){
     this.emit("error",e);
     this.runQueue();
   }.bind(this);
-  if(ux[this.info.ux].error){
+  if(this.info && this.info.ux && ux[this.info.ux].error){
     return ux[this.info.ux].error.call(this,e,fail);
   }else{
     fail();
