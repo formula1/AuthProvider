@@ -17,7 +17,6 @@ var validauths = {};
 function AuthProvider(identity){
   EventEmitter.call(this);
   this.config = validauths;
-  this.accessRetriever = accessRetriever;
   this.uri_queue = [];
   this.is_authed = 0;
   Object.defineProperty(this,"isLoggedIn",{
@@ -83,7 +82,7 @@ AuthProvider.prototype.parseURL = function(){
 AuthProvider.prototype.getAccess = function(code){
   this.is_authed = 0;
   delete this.info.state;
-  this[this.info.auth].accessRetriever(code,function(e,access_token){
+  validauths[this.info.auth].access_retriever(code,function(e,access_token){
     if(e){
       this.fail(e);
     }else{
