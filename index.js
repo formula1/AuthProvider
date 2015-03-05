@@ -51,7 +51,7 @@ AuthProvider.init = function(authorities){
 AuthProvider.prototype.parseURL = function(){
   this.info = this.storage.getItem(this.identity+"_authority");
 //  this.access_token = this.storage.getItem(this.identity+"_access_token");
-  if(!this.info){
+  if(this.info === null || !this.info){
     return this.fail("not expecting to login");
   }
   if(this.info.access_token){
@@ -94,6 +94,7 @@ AuthProvider.prototype.getAccess = function(code){
 };
 
 AuthProvider.prototype.fail = function(e){
+  console.error(e);
   var fail = function(){
     this.is_authed = -1;
     this.storage.removeItem(this.identity+"_authority");
