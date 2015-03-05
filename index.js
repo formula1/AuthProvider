@@ -31,6 +31,7 @@ function AuthProvider(identity){
     if(ux[i].init) ux[i].init.call(this,identity);
   }
   this.asAuthority = this.asAuthority.bind(this);
+  this.info = {};
   setTimeout(this.parseURL.bind(this),1);
 }
 
@@ -52,8 +53,10 @@ AuthProvider.prototype.parseURL = function(){
   this.info = this.storage.getItem(this.identity+"_authority");
 //  this.access_token = this.storage.getItem(this.identity+"_access_token");
   if(this.info === null || !this.info){
+    this.info = {};
     return this.fail("not expecting to login");
   }
+  this.info = JSON.parse(this.info);
   if(this.info.access_token){
     return this.finish();
   }
