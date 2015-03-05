@@ -16,7 +16,6 @@ var validauths = {};
 
 function AuthProvider(identity){
   EventEmitter.call(this);
-  this.config = validauths;
   this.uri_queue = [];
   this.is_authed = 0;
   Object.defineProperty(this,"isLoggedIn",{
@@ -152,7 +151,7 @@ AuthProvider.prototype.login = function(authtype, uxtype){
   uxtype = uxtype||"redirect";
 
   if(!(authtype in auth)) throw new Error("This auth type is not available");
-  if(!(authtype in this.config)) throw new Error("You did not initialize this authtype");
+  if(!(authtype in validauths)) throw new Error("You did not initialize this authtype");
   if(!(uxtype in ux)) throw new Error("This is not an available method for user experience");
 
   var state = this.identity+Date.now()+"_"+Math.random();
@@ -164,7 +163,7 @@ AuthProvider.prototype.login = function(authtype, uxtype){
   this.storage.setItem(this.identity+"_authority", JSON.stringify(this.info));
 
   var location = auth[authtype].authLocation(
-    this.config[authtype].clientid,
+    validauths[authtype].client_id,
     state,
     document.location
   );
