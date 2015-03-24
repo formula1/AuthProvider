@@ -2,7 +2,7 @@
   "name": "auth-provider",
   "version": "0.6.1",
   "description": "A wrapper for oAuth support",
-  "browser": "./browser.js",
+  "browser": "./index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
