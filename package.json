@@ -1,0 +1,35 @@
+{
+  "name": "auth-provider",
+  "version": "0.6.1",
+  "description": "A wrapper for oAuth support",
+  "browser": "./browser.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/formula1/UserProvider.git"
+  },
+  "keywords": [
+    "oAuth",
+    "authorization",
+    "clientside",
+    "serverless",
+    "browser",
+    "browserify"
+  ],
+  "author": {
+    "name": "formula1"
+  },
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/formula1/UserProvider/issues"
+  },
+  "homepage": "https://github.com/formula1/UserProvider",
+  "maintainers": [
+    {
+      "name": "formula1",
+      "email": "samtobia@gmail.com"
+    }
+  ]
+}

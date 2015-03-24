@@ -1,7 +1,6 @@
 
 var querystring = require("querystring");
 var EventEmitter = require("events").EventEmitter;
-window.cookieStorage = require("./CookieStore");
 
 var ux = {
  popup: require("./user-experience/popup"),
@@ -24,7 +23,7 @@ function AuthProvider(identity){
     }
   });
   identity = identity?identity:{};
-  this.storage = identity.storage||cookieStorage;
+  this.storage = identity.storage||require("./CookieStore");
   this.identity = identity.identity || "global";
   for(var i in ux){
     if(ux[i].init) ux[i].init.call(this,identity);
