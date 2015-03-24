@@ -1,6 +1,6 @@
 {
   "name": "auth-provider",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "A wrapper for oAuth support",
   "browser": "./index.js",
   "scripts": {
